@@ -79,7 +79,7 @@ python3 prepare_cifar100_dataset.py
 ```
 
 ## Contact
-Feel free to get in touch with us with any questions on the project or to request access to data and / or pretrained models. Reach out to `konstantin.schuerhol@unsig.ch`.
+Feel free to get in touch with us with any questions on the project or to request access to data and / or pretrained models. Reach out to `konstantin.schuerholt@unisg.ch`.
 
 ## Citation
 If you use this code in your research, please cite our paper:
