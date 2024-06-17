@@ -19,7 +19,6 @@ from SANE.git_re_basin.git_re_basin import (
 from SANE.models.def_net import NNmodule
 
 from .dataset_auxiliaries import (
-    # tokens_to_checkpoint,
     tokenize_checkpoint,
 )
 
@@ -27,8 +26,6 @@ from .dataset_auxiliaries import (
 import logging
 
 from typing import List, Union, Optional
-
-from SANE.datasets.random_erasing import RandomErasingVector
 
 import ray
 from .progress_bar import ProgressBar

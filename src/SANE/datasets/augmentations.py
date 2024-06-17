@@ -639,9 +639,12 @@ class CheckpointAugmentationPipeline(torch.nn.Module):
 
         # get lenght of token sequence
         max_len = ddx.shape[-2]
+
+        # adjust local windowsize s.t. its not longer than the actual sequence
+        windowsize = min(self.windowsize, max_len)
         # sample start
-        idx_start = random.randint(0, max_len - self.windowsize)
-        idx_end = idx_start + self.windowsize
+        idx_start = random.randint(0, max_len - windowsize)
+        idx_end = idx_start + windowsize
 
         # get index tensor
         idx = torch.arange(start=idx_start, end=idx_end, device=ddx.device)

@@ -171,7 +171,6 @@ class ModelDatasetBaseEpochs(Dataset):
             model_labels = []
             model_paths = []
             model_epochs = []
-
             for edx in epoch_lst:
                 # # call function in parallel
                 (
@@ -206,10 +205,6 @@ class ModelDatasetBaseEpochs(Dataset):
         labels = [ray.get(ldx) for ldx in labels]
         paths = [ray.get(pdx) for pdx in paths]
         epochs = [ray.get(edx) for edx in epochs]
-        # data = ray.get(data)
-        # labels = ray.get(labels)
-        # paths = ray.get(paths)
-        # epochs = ray.get(epochs)
 
         ray.shutdown()
 
@@ -408,6 +403,7 @@ def load_checkpoints_remote(
 ):
     ## get full path to files ################################################################
     chkpth = path.joinpath(f"checkpoint_{edx}", "checkpoints")
+    print(f"try to load checkpoint from {chkpth}")
     ## load checkpoint #######################################################################
     chkpoint = {}
     try:
@@ -475,6 +471,7 @@ def load_checkpoint(
 ):
     ## get full path to files ################################################################
     chkpth = path.joinpath(f"checkpoint_{edx}", "checkpoints")
+    print(f"try to load checkpoint from {chkpth}")
     ## load checkpoint #######################################################################
     chkpoint = {}
     try:

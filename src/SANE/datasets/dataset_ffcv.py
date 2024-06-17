@@ -8,7 +8,11 @@ from pathlib import Path
 from SANE.git_re_basin.git_re_basin import PermutationSpec
 
 from SANE.datasets.dataset_tokens import DatasetTokens
-from SANE.datasets.augmentations import WindowCutter, PermutationAugmentation
+from SANE.datasets.augmentations import (
+    WindowCutter,
+    TokenizerAugmentation,
+    CheckpointAugmentationPipeline,
+)
 
 import logging
 
@@ -192,9 +196,7 @@ def preprocess_single_split(
     else:
         root = Path(zoo_path).absolute()
 
-    # TODO: permutation on tokens is unstable. shift to checkpoints (all implemented..)
-    # TODO: a priori, that should mean changing the getitem and the transform.
-
+    print("Load token dataset")
     logging.info("Load token dataset")
     dataset = DatasetTokens(
         root=root,
@@ -212,6 +214,7 @@ def preprocess_single_split(
         num_threads=12,
         shuffle_path=True,
         verbosity=3,
+        mode="checkpoint",  # apply permutation on checkpoint
         getitem="tokens+props",
         ignore_bn=ignore_bn,
         tokensize=tokensize,
@@ -230,21 +233,14 @@ def preprocess_single_split(
             logging.error(e)
 
     # set windowcutter transform
-    logging.info("set augmentations before  ffcv dataset")
-    if permutation_number > 0:
-        logging.info("augmentations: prepare permutations")
-        dataset.transforms = PermutationAugmentation(
-            ref_checkpoint=dataset.reference_checkpoint,
-            tokensize=dataset.tokensize,
-            permutation_number=permutation_number,
-            windowsize=windowsize,
-            permutations_per_sample=permutations_per_sample,
-            ignore_bn=ignore_bn,
-            perm_spec=permutation_spec,
-        )
-    else:
-        logging.info("augmentations: prepare windowcutter")
-        dataset.transforms = WindowCutter(windowsize=windowsize)
+    logging.info("set augmentations before ffcv dataset")
+    dataset.transforms = CheckpointAugmentationPipeline(
+        perm_spec=permutation_spec,
+        tokensize=dataset.tokensize,
+        ignore_bn=ignore_bn,
+        permutation_number=permutation_number,
+        windowsize=windowsize,
+    )
 
     # set supersample
     if supersample == "auto":
@@ -290,6 +286,16 @@ def preprocess_single_split(
     logging.info("write ffcv dataset to disk")
     writer.from_indexed_dataset(dataset)
 
+    # get full sample and infer dimensions
+    dataset.transforms = CheckpointAugmentationPipeline(
+        perm_spec=permutation_spec,
+        tokensize=dataset.tokensize,
+        ignore_bn=ignore_bn,
+        permutation_number=permutation_number,
+        windowsize=1000000000,  # set windowsize very large
+    )
+    ddx, mask, pos, props = dataset.__getitem__(0)
+
     # drop info
     logging.info("collect info and write to disk")
     info = {
@@ -310,7 +316,7 @@ def preprocess_single_split(
         "shuffle_path": shuffle_path,
         "windowsize": windowsize,
         "split": split,
-        "max_positions": dataset.positions.max(dim=0).values.tolist(),
+        "max_positions": pos.max(dim=0).values.tolist(),
     }
     # add info json to the same path
     json_path = Path(dataset_target_path).joinpath(f"dataset_info_{split}.json")
@@ -366,6 +372,15 @@ def preprocess_single_split(
         pipelines=PIPELINES,
         os_cache=False,
     )
+    # save params.json
+    path_list = [pdx for pdx in root[0].iterdir() if pdx.is_dir()]
+    json_path = path_list[0].joinpath("params.json")
+    model_example_config = json.load(json_path.open("r"))
+    # write json to target path
+    json_path_target = Path(dataset_target_path).joinpath("params.json")
+    # dump json to target
+    json.dump(model_example_config, json_path_target.open("w"))
+
     print(f"loader len: {len(loader)}")
     for idx, (ddx, mask, pos, props) in enumerate(loader):
         print(f"ddx.shape: {ddx.shape} - dtype: {ddx.dtype}")
