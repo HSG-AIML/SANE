@@ -11,6 +11,7 @@ from SANE.datasets.augmentations import (
     WindowCutter,
     TokenizerAugmentation,
     CheckpointAugmentationPipeline,
+    PermutationAugmentation,
 )
 
 from SANE.git_re_basin.git_re_basin import (
