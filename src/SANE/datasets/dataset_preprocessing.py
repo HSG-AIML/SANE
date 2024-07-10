@@ -4,7 +4,7 @@ from typing import Union, List, Tuple, Dict, Any
 
 from pathlib import Path
 
-from shrp.git_re_basin.git_re_basin import PermutationSpec
+from SANE.git_re_basin.git_re_basin import PermutationSpec
 
 from SANE.datasets.dataset_tokens import DatasetTokens
 from SANE.datasets.augmentations import (
