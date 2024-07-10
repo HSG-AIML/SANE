@@ -4,7 +4,6 @@ from typing import Union, List, Tuple, Dict, Any
 
 from pathlib import Path
 
-from SANE.git_re_basin.git_re_basin import PermutationSpec
 
 from SANE.datasets.dataset_tokens import DatasetTokens
 from SANE.datasets.augmentations import (
@@ -15,8 +14,7 @@ from SANE.datasets.augmentations import (
 )
 
 from SANE.git_re_basin.git_re_basin import (
-    resnet18_permutation_spec,
-    resnet34_permutation_spec,
+    PermutationSpec,
 )
 
 import logging
