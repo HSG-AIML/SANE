@@ -10,8 +10,6 @@ import json
 # print(f"sys path in experiment: {sys.path}")
 from pathlib import Path
 
-from SANE.datasets.dataset_simclr import SimCLRDataset
-
 # import model_definitions
 from SANE.models.def_AE_module import AEModule
 
