@@ -41,11 +41,11 @@ To get started with a small experiment, run
 bash download_data.sh
 ```
 This will download and unzip a small model zoo example with ResNet-18 models trained on CIFAR100. 
-Training on large models requires preprocessing for training efficiency. To preprocess [FFCV](https://ffcv.io/) type datasets, run 
+Training on large models requires preprocessing for training efficiency. We provide code to preprocess training samples. To compile those datasets, run
 ```bash
-bash preprocess_ffcv_dataset.sh
+bash preprocess_dataset.sh
 ```
-in `./data/`. To run FFCV on containers with cuda and pytorch, [this](https://github.com/kschuerholt/pytorch_cuda_opencv_ffcv_docker) container may be of help.
+in `./data/`. These datasets have no specific dependency requirements, other than regular numpy and pytorch.
 
 Please note that this is not the exact models used in the paper and will therefore produce different results. The full zoos can be downloaded from [modelzoos.cc](https://modelzoos.cc/) and used in the same way as the zoo sample.  
 
