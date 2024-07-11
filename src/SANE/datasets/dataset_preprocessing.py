@@ -1,17 +1,20 @@
-from ffcv.writer import DatasetWriter
-from ffcv.fields import NDArrayField, FloatField, TorchTensorField, BytesField
+import os
 
 from typing import Union, List, Tuple, Dict, Any
 
 from pathlib import Path
 
-from SANE.git_re_basin.git_re_basin import PermutationSpec
 
 from SANE.datasets.dataset_tokens import DatasetTokens
 from SANE.datasets.augmentations import (
     WindowCutter,
     TokenizerAugmentation,
     CheckpointAugmentationPipeline,
+    PermutationAugmentation,
+)
+
+from SANE.git_re_basin.git_re_basin import (
+    PermutationSpec,
 )
 
 import logging
@@ -19,9 +22,76 @@ import logging
 import json
 
 import torch
+from torch.utils.data import DataLoader
+
+def prepare_multiple_datasets(configurations: List[Dict[str, Any]]):
+    """
+    Prepares datasets for multiple architectures.
+    Args:
+        configurations: List of configurations.
+    Returns:
+        None
+    """
+    for config in configurations:
+        prepare_dataset(
+            dataset_target_path=config["dataset_target_path"],
+            zoo_path=config["zoo_path"],
+            epoch_list=config["epoch_list"],
+            permutation_spec=config["permutation_spec"],
+            map_to_canonical=config.get("map_to_canonical", False),
+            standardize=config.get("standardize", "l2_ind"),
+            ds_split=config.get("ds_split", [0.7, 0.15, 0.15]),
+            splits=config.get("splits", ["train"]),
+            max_samples=config.get("max_samples", 1000),
+            weight_threshold=config.get("weight_threshold", 15),
+            property_keys=config.get(
+                "property_keys",
+                {
+                    "result_keys": [
+                        "test_acc",
+                        "training_iteration",
+                        "ggap",
+                    ],
+                    "config_keys": [],
+                },
+            ),
+            filter_fn=config.get("filter_fn", None),
+            num_threads=config.get("num_threads", 12),
+            shuffle_path=config.get("shuffle_path", True),
+            windowsize=config.get("windowsize", 160),
+            supersample=config.get("supersample", "auto"),
+            precision=config.get("precision", 16),
+            ignore_bn=config.get("ignore_bn", True),
+            tokensize=config.get("tokensize", 288),
+            permutation_number_train=config.get("permutation_number_train", 0),
+            permutations_per_sample_train=config.get("permutations_per_sample_train", 0),
+            permutation_number_test=config.get("permutation_number_test", 0),
+            permutations_per_sample_test=config.get("permutations_per_sample_test", 0),
+            page_size=config.get("page_size", 4 * 1 << 21),
+            drop_pt_dataset=config.get("drop_pt_dataset", False),
+        )
+
+# Save function using torch
+def save_torch_sample(index, ddx, mask, pos, props, output_dir):
+    file_path = os.path.join(output_dir, f"sample_{index}.pt")
+    torch.save({"w": ddx, "m": mask, "p": pos, "props": props}, file_path)
 
 
-def prepare_ffcv_dataset(
+def save_dataset(dataset, output_dir):
+    # Create a DataLoader
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    for index, (ddx, mask, pos, props) in enumerate(dataloader):
+        # remove batch dimension 
+        ddx, mask, pos, props = ddx.squeeze(0), mask.squeeze(0), pos.squeeze(0), props.squeeze(0)
+        save_torch_sample(index, ddx, mask, pos, props, output_dir)
+
+    logging.info(f"All samples have been saved to {output_dir}")
+
+def prepare_dataset(
     dataset_target_path: Union[str, Path],
     zoo_path: Union[list, str, Path],
     epoch_list: list,
@@ -196,7 +266,6 @@ def preprocess_single_split(
     else:
         root = Path(zoo_path).absolute()
 
-    print("Load token dataset")
     logging.info("Load token dataset")
     dataset = DatasetTokens(
         root=root,
@@ -214,7 +283,6 @@ def preprocess_single_split(
         num_threads=12,
         shuffle_path=True,
         verbosity=3,
-        mode="checkpoint",  # apply permutation on checkpoint
         getitem="tokens+props",
         ignore_bn=ignore_bn,
         tokensize=tokensize,
@@ -233,14 +301,21 @@ def preprocess_single_split(
             logging.error(e)
 
     # set windowcutter transform
-    logging.info("set augmentations before ffcv dataset")
-    dataset.transforms = CheckpointAugmentationPipeline(
-        perm_spec=permutation_spec,
-        tokensize=dataset.tokensize,
-        ignore_bn=ignore_bn,
-        permutation_number=permutation_number,
-        windowsize=windowsize,
-    )
+    logging.info("set augmentations before  ffcv dataset")
+    if permutation_number > 0:
+        logging.info("augmentations: prepare permutations")
+        dataset.transforms = PermutationAugmentation(
+            ref_checkpoint=dataset.reference_checkpoint,
+            tokensize=dataset.tokensize,
+            permutation_number=permutation_number,
+            windowsize=windowsize,
+            permutations_per_sample=permutations_per_sample,
+            ignore_bn=ignore_bn,
+            perm_spec=permutation_spec,
+        )
+    else:
+        logging.info("augmentations: prepare windowcutter")
+        dataset.transforms = WindowCutter(windowsize=windowsize)
 
     # set supersample
     if supersample == "auto":
@@ -255,7 +330,6 @@ def preprocess_single_split(
 
     # get sample and infer dimensions
     logging.info("get sample and infer dimensions")
-    # ddx, mask, pos = dataset.__getitem__(0)
     ddx, mask, pos, props = dataset.__getitem__(0)
 
     logging.info(f"ddx.shape: {ddx.shape} - dtype: {ddx.dtype}")
@@ -264,37 +338,12 @@ def preprocess_single_split(
     logging.info(f"props.shape: {props.shape} - dtype: {props.dtype}")
 
     # configure writer
-    logging.info("configure ffcv writer")
+    logging.info("save to disk")
     # """
-    write_path = Path(dataset_target_path).joinpath(f"dataset_beton.{split}")
-    writer = DatasetWriter(
-        write_path,
-        {
-            "w": TorchTensorField(
-                shape=ddx.shape, dtype=ddx.dtype
-            ),  # torch.float32 or 16
-            "m": TorchTensorField(shape=mask.shape, dtype=mask.dtype),  # torch.bool
-            "p": TorchTensorField(shape=pos.shape, dtype=pos.dtype),  # torch.int16
-            "props": TorchTensorField(
-                shape=props.shape, dtype=props.dtype
-            ),  # torch.float32
-        },
-        page_size=page_size,
-        num_workers=16,
-    )
-    # write dataset
-    logging.info("write ffcv dataset to disk")
-    writer.from_indexed_dataset(dataset)
+    write_path = Path(dataset_target_path).joinpath(f"dataset_torch.{split}")
+    logging.info(f"write_path: {write_path}")
 
-    # get full sample and infer dimensions
-    dataset.transforms = CheckpointAugmentationPipeline(
-        perm_spec=permutation_spec,
-        tokensize=dataset.tokensize,
-        ignore_bn=ignore_bn,
-        permutation_number=permutation_number,
-        windowsize=1000000000,  # set windowsize very large
-    )
-    ddx, mask, pos, props = dataset.__getitem__(0)
+    save_dataset(dataset, write_path)
 
     # drop info
     logging.info("collect info and write to disk")
@@ -316,7 +365,7 @@ def preprocess_single_split(
         "shuffle_path": shuffle_path,
         "windowsize": windowsize,
         "split": split,
-        "max_positions": pos.max(dim=0).values.tolist(),
+        "max_positions": dataset.positions.max(dim=0).values.tolist(),
     }
     # add info json to the same path
     json_path = Path(dataset_target_path).joinpath(f"dataset_info_{split}.json")
@@ -342,50 +391,4 @@ def preprocess_single_split(
         f"dataset_normalization_{split}.json"
     )
     json.dump(layer_norms, json_path.open("w"))
-    # """
 
-    # test dataset
-    logging.info("test dataset with dataloader")
-    from ffcv.loader import Loader, OrderOption
-
-    batch_size = 64
-    num_workers = 4
-    ordering = OrderOption.QUASI_RANDOM
-    # Dataset ordering
-
-    from ffcv.fields.decoders import NDArrayDecoder
-    from ffcv.transforms import ToTensor, Convert
-
-    PIPELINES = {
-        "w": [NDArrayDecoder(), ToTensor(), Convert(torch.float16)],
-        "m": [NDArrayDecoder(), ToTensor()],
-        "p": [NDArrayDecoder(), ToTensor()],
-        "props": [NDArrayDecoder(), ToTensor()],
-    }
-
-    loader = Loader(
-        write_path,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        order=ordering,
-        drop_last=True,
-        pipelines=PIPELINES,
-        os_cache=False,
-    )
-    # save params.json
-    path_list = [pdx for pdx in root[0].iterdir() if pdx.is_dir()]
-    json_path = path_list[0].joinpath("params.json")
-    model_example_config = json.load(json_path.open("r"))
-    # write json to target path
-    json_path_target = Path(dataset_target_path).joinpath("params.json")
-    # dump json to target
-    json.dump(model_example_config, json_path_target.open("w"))
-
-    print(f"loader len: {len(loader)}")
-    for idx, (ddx, mask, pos, props) in enumerate(loader):
-        print(f"ddx.shape: {ddx.shape} - dtype: {ddx.dtype}")
-        print(f"mask.shape: {mask.shape} - dtype: {mask.dtype}")
-        print(f"pos.shape: {pos.shape} - dtype: {pos.dtype}")
-        print(f"props.shape: {props.shape} - dtype: {props.dtype}")
-        # if idx == 10:
-        break

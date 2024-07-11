@@ -25,15 +25,13 @@ from SANE.evaluation.ray_fine_tuning_callback_bootstrapped import (
     CheckpointSamplingCallbackBootstrapped,
 )
 
-
 import json
 
 from pathlib import Path
 
 
 from SANE.models.def_AE_trainable import AE_trainable
-
-from SANE.datasets.dataset_ffcv_trojai import prepare_ffcv_dataset
+from SANE.datasets.dataset_sampling_preprocessed import PreprocessedSamplingDataset
 
 from SANE.git_re_basin.git_re_basin import (
     PermutationSpec,
