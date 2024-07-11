@@ -119,9 +119,7 @@ def main():
     data_path = Path("../data/dataset_cifar100_token_288_ep60_std/")
     data_path.mkdir(exist_ok=True)
     # path to ffcv dataset for training
-    config["dataset::dump"] = data_path.joinpath("dataset_beton").absolute()
-    # path to .pt dataset for downstream tasks
-    # config["downstreamtask::dataset"] = data_path.joinpath("dataset.pt").absolute()
+    config["dataset::dump"] = data_path.joinpath("dataset.pt").absolute()
     config["downstreamtask::dataset"] = None
     # call dataset prepper function
     logging.info("prepare data")

@@ -1,6 +1,3 @@
-from SANE.models.downstream_module_ffcv import (
-    DownstreamTaskLearner as DownstreamTaskLearnerFFCV,
-)
 from SANE.models.def_downstream_module import (
     DownstreamTaskLearner as DownstreamTaskLearner,
 )

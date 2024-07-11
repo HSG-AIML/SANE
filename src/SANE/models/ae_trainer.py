@@ -28,9 +28,7 @@ from SANE.datasets.augmentations import (
     PermutationSelector,
 )
 
-from SANE.models.downstream_module_ffcv import (
-    DownstreamTaskLearner as DownstreamTaskLearnerFFCV,
-)
+
 from SANE.models.def_downstream_module import (
     DownstreamTaskLearner as DownstreamTaskLearner,
 )
@@ -284,21 +282,6 @@ class AE_trainer:
             for key in performance.keys():
                 new_key = f"dstk/{key}"
                 result_dict[new_key] = performance[key]
-        # ffcv dataset
-        if self.dstk2 is not None:
-            performance = self.dstk2.eval_dstasks(
-                model=self.module,
-                trainloader=self.dloader_dstk_train,
-                testloader=self.dloader_dstk_test,
-                valloader=self.dloader_dstk_val,
-                task_keys=self.task_keys,
-                batch_size=self.config["trainset::batchsize"],
-                polar_coordinates=False,
-            )
-            # append performance values to result_dict
-            for key in performance.keys():
-                new_key = f"dstk_ffcv/{key}"
-                result_dict[new_key] = performance[key]
         # return
         return result_dict
 
@@ -418,70 +401,6 @@ class AE_trainer:
                 valloader = None
 
             return trainset, testset, valset, trainloader, testloader, valloader
-        # ffcv type dataset
-        elif "dataset_beton" in str(self.config["dataset::dump"]):
-            from ffcv.loader import Loader, OrderOption
-            from ffcv.fields.decoders import NDArrayDecoder
-            from ffcv.transforms import ToTensor, Convert
-
-            # trainloader
-            batch_size = self.config["trainset::batchsize"]
-            num_workers = self.config.get("testloader::workers", 4)
-            ordering = OrderOption.QUASI_RANDOM
-            weights_dtype = (
-                torch.float32
-                if self.config.get("training::precision", "32") == "32"
-                else torch.float16
-            )
-            PIPELINES = {
-                "w": [NDArrayDecoder(), ToTensor(), Convert(weights_dtype)],
-                "m": [NDArrayDecoder(), ToTensor()],
-                "p": [NDArrayDecoder(), ToTensor()],
-                "props": [NDArrayDecoder(), ToTensor()],
-            }
-
-            # Dataset ordering
-            path_trainset = str(self.config["dataset::dump"]) + ".train"
-            trainloader = Loader(
-                path_trainset,
-                batch_size=batch_size,
-                num_workers=num_workers,
-                order=ordering,
-                drop_last=True,
-                pipelines=PIPELINES,
-                os_cache=False,
-            )
-            # trainloader
-            batch_size = self.config["trainset::batchsize"]
-            num_workers = self.config.get("testloader::workers", 4)
-            ordering = OrderOption.SEQUENTIAL
-            # Dataset ordering
-            path_testset = str(self.config["dataset::dump"]) + ".test"
-            testloader = Loader(
-                path_testset,
-                batch_size=batch_size,
-                num_workers=num_workers,
-                order=ordering,
-                drop_last=True,
-                pipelines=PIPELINES,
-                os_cache=False,
-            )
-            # self.config
-            batch_size = self.config["trainset::batchsize"]
-            num_workers = self.config.get("testloader::workers", 4)
-            ordering = OrderOption.SEQUENTIAL
-            # Dataset ordering
-            path_valset = str(self.config["dataset::dump"]) + ".val"
-            valloader = Loader(
-                path_valset,
-                batch_size=batch_size,
-                num_workers=num_workers,
-                order=ordering,
-                drop_last=True,
-                pipelines=PIPELINES,
-                os_cache=False,
-            )
-            return None, None, None, trainloader, testloader, valloader
         else:
             raise NotImplementedError(
                 f'could not load dataset from {self.config["dataset::dump"]}'
@@ -516,73 +435,10 @@ class AE_trainer:
                         "Found properties in dataset - downstream tasks are going to be evaluated at test time."
                     )
                     self.dstk = DownstreamTaskLearner()
-                    self.dstk2 = None
 
                     dataset_info_path = str(downstream_dataset_path).replace(
                         "dataset.pt", "dataset_info_test.json"
                     )
-            # ffvc type dataset
-            elif "dataset_beton" in str(downstream_dataset_path):
-                from ffcv.loader import Loader, OrderOption
-                from ffcv.fields.decoders import NDArrayDecoder
-                from ffcv.transforms import ToTensor, Convert
-
-                # trainloader
-                batch_size = self.config["trainset::batchsize"]
-                num_workers = self.config.get("testloader::workers", 4)
-                ordering = OrderOption.SEQUENTIAL  # doesn't matter for dstk
-                weights_dtype = (
-                    torch.float32
-                    if self.config.get("training::precision", "32") == "32"
-                    else torch.float16
-                )
-                PIPELINES = {
-                    "w": [NDArrayDecoder(), ToTensor(), Convert(weights_dtype)],
-                    "m": [NDArrayDecoder(), ToTensor()],
-                    "p": [NDArrayDecoder(), ToTensor()],
-                    "props": [NDArrayDecoder(), ToTensor()],
-                }
-                path_trainset = str(downstream_dataset_path) + ".train"
-                self.dloader_dstk_train = Loader(
-                    path_trainset,
-                    batch_size=batch_size,
-                    num_workers=num_workers,
-                    order=ordering,
-                    drop_last=True,
-                    pipelines=PIPELINES,
-                    os_cache=False,
-                )
-                # trainloader
-                path_testset = str(downstream_dataset_path) + ".test"
-                self.dloader_dstk_test = Loader(
-                    path_testset,
-                    batch_size=batch_size,
-                    num_workers=num_workers,
-                    order=ordering,
-                    drop_last=True,
-                    pipelines=PIPELINES,
-                    os_cache=False,
-                )
-                # config
-                path_valset = str(downstream_dataset_path) + ".val"
-                self.dloader_dstk_val = Loader(
-                    path_valset,
-                    batch_size=batch_size,
-                    num_workers=num_workers,
-                    order=ordering,
-                    drop_last=True,
-                    pipelines=PIPELINES,
-                    os_cache=False,
-                )
-
-                # instanciate downstreamtask module
-                self.dstk2 = DownstreamTaskLearnerFFCV()
-                self.dstk = None
-
-                dataset_info_path = str(downstream_dataset_path).replace(
-                    "dataset_beton", "dataset_info_test.json"
-                )
-                # configure dstks to use the right one
         elif (
             self.config.get("downstreamtask::dataset", "use_ssl_dataset")
             == "use_ssl_dataset"
@@ -598,33 +454,18 @@ class AE_trainer:
                         "Found properties in dataset - downstream tasks are going to be evaluated at test time."
                     )
                     self.dstk = DownstreamTaskLearner()
-                    self.dstk2 = None
 
                     dataset_info_path = str(self.config["dataset::dump"]).replace(
                         "dataset.pt", "dataset_info_test.json"
                     )
 
-            elif "dataset_beton" in str(self.config["dataset::dump"]):
-                # assign correct loaders
-                self.dloader_dstk_train = self.trainloader
-                self.dloader_dstk_test = self.testloader
-                self.dloader_dstk_val = self.valloader
-
-                # instanciate downstreamtask module
-                self.dstk2 = DownstreamTaskLearnerFFCV()
-                self.dstk = None
-
-                dataset_info_path = str(self.config["dataset::dump"]).replace(
-                    "dataset_beton", "dataset_info_test.json"
-                )
 
         else:
             logging.info("No properties found in dataset - skip downstream tasks.")
             self.dstk = None
-            self.dstk2 = None
 
         # load task_keys
-        if self.dstk or self.dstk2:
+        if self.dstk:
             try:
                 self.dataset_info = json.load(open(dataset_info_path, "r"))
                 self.task_keys = self.dataset_info["properties"]
