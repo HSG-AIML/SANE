@@ -57,11 +57,9 @@ logging.basicConfig(level=logging.INFO)
 
 def prep_data():
     dataset_target_path = [
-        # Path("./dataset_cnn_cifar10_ep21-25_std/"),
         Path("./dataset_cnn_cifar10_sample_ep21-25_std/"),
     ]
     zoo_path = [  
-        # Path("./tune_zoo_cifar10_uniform_large/").absolute()
         Path("./cifar10_cnn_sample_ep21-25").absolute()
     ]
     zoo_path_and_permutation_spec_and_target_path = [
