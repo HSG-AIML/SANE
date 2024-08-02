@@ -66,7 +66,7 @@ def prep_data():
         (zoo_path[0], zoo_cnn_large_permutation_spec, dataset_target_path[0]),
     ]
     configurations = create_configurations(zoo_path_and_permutation_spec_and_target_path, filter_fn=None)
-    # prepare_multiple_datasets(configurations=configurations)
+    prepare_multiple_datasets(configurations=configurations)
 
     # create dataset dump for later use
     ds_train = PreprocessedSamplingDataset(zoo_paths=dataset_target_path, split="train")
