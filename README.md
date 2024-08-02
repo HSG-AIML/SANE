@@ -36,16 +36,17 @@ We include code to run example experiments and showcase how to use our code.
 ### Download Model Zoo Datasets
 We have made several model zoos available at [modelzoos.cc](https://modelzoos.cc/). Any of these zoos can be used in our pipeline, with minor adjustments.  
 
-To get started with a small experiment, run 
+To get started with a small experiment, navigate to `./data/` and run 
 ```bash
-bash download_data.sh
+bash download_cifar10_cnn_sample.sh
 ```
-This will download and unzip a small model zoo example with ResNet-18 models trained on CIFAR100. 
-Training on large models requires preprocessing for training efficiency. We provide code to preprocess training samples. To compile those datasets, run
+This will download and unzip a small model zoo example with CNN models trained on CIFAR-10. 
+Training on large model zoos requires preprocessing for training efficiency. We provide code to preprocess training samples. To compile those datasets, run
 ```bash
-bash preprocess_dataset.sh
+python3 preprocess_dataset_cnn_cifar10_sample.py
 ```
-in `./data/`. These datasets have no specific dependency requirements, other than regular numpy and pytorch.
+in `./data/`. in the same directory, we provide download and preprocessing scripts for other zoos as well. 
+The preprocessed datasets have no specific dependency requirements, other than regular numpy and pytorch.
 
 Please note that this is not the exact models used in the paper and will therefore produce different results. The full zoos can be downloaded from [modelzoos.cc](https://modelzoos.cc/) and used in the same way as the zoo sample.  
 
