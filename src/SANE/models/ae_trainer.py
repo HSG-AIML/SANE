@@ -174,19 +174,21 @@ class AE_trainer:
         experiment_dir = self.config["experiment_dir"]
         json_filename = experiment_dir.joinpath("results.json").absolute()
         config_filename = experiment_dir.joinpath("params.json").absolute()
-        # wandb login
-        # Read the API key from the text file
-        with open(self.config["wandb::api_key_file"], "r") as api_key_file:
-            api_key = api_key_file.read().strip()
-        # Set the API key as an environment variable
-        os.environ["WANDB_API_KEY"] = api_key
-        wandb.login()
-        # wandb init
-        wandb.init(
-            project=self.config["wandb::project"],
-            dir=experiment_dir,
-            config=self.config,
-        )
+        # wandb logging
+        if self.config.get("wandb::api_key_file", None):
+            # wandb login
+            # Read the API key from the text file
+            with open(self.config["wandb::api_key_file"], "r") as api_key_file:
+                api_key = api_key_file.read().strip()
+            # Set the API key as an environment variable
+            os.environ["WANDB_API_KEY"] = api_key
+            wandb.login()
+            # wandb init
+            wandb.init(
+                project=self.config["wandb::project"],
+                dir=experiment_dir,
+                config=self.config,
+            )
         log_config(config_filename, self.config)
         # resume
         if resume_iter != 0:
@@ -197,7 +199,9 @@ class AE_trainer:
             # perform step
             results = self.step()
             # log results
-            wandb.log(results)
+            # wandb logging
+            if self.config.get("wandb::api_key_file", None):
+                wandb.log(results)
             # log json results
             update_json_with_results(json_filename, results)
             # save checkpoint
