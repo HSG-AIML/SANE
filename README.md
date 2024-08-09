@@ -72,7 +72,9 @@ within `experiments`. This will compute the property prediction results from bot
 Generating models can provide initializations even for new tasks and architectures that give an advantage over random initializations, see the Figure below.
 ![SANE weight generation comparison. Models initialized with SANE outperform random initialization on new models or tasks](assets/sample_models.png)
 
-In `experiments`, there is also code to generate and evaluate models. `sample_finetune_cifar100_resnet18.py` contains an example for model sampling. As above, set the path to a pretrained SANE model and epoch. Then, run
+In `experiments`, there is also code to generate and evaluate models. 
+`cnn-cifar10_exploration.ipynb` is a quick-start notebook to explore the datasets, SANE models, training loop, as well as encoding and de-coding models. 
+We further provide experiment code for the sample dataset of cnns and a larger resnet dataset. For the latter, `sample_finetune_cifar100_resnet18.py` contains an example for model sampling. As above, set the path to a pretrained SANE model and epoch. Then, run
 ```bash
 python3 sample_finetune_cifar100_resnet18.py
 ```
@@ -80,6 +82,7 @@ within `experiments`. Generating models requires a pre-processed CIFAR100 datase
 ```bash
 python3 prepare_cifar100_dataset.py
 ```
+The small cnn sample experiment code is structured correspondingly.
 
 ## Contact
 Feel free to get in touch with us with any questions on the project or to request access to data and / or pretrained models. Reach out to `konstantin.schuerholt@unisg.ch`.
