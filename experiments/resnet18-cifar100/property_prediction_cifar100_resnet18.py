@@ -167,7 +167,7 @@ epoch_list = [1, 3, 5, 10, 15, 20, 25]
 # )
 
 # use-pre-compiled dataset
-ds_path = Path("../data/dataset_cifar100_token_288_ep60_std/")
+ds_path = Path("../../data/dataset_cifar100_token_288_ep60_std/")
 ds_train = torch.load(ds_path.joinpath("dataset_train.pt"))
 ds_test = torch.load(ds_path.joinpath("dataset_test.pt"))
 ds_val = torch.load(ds_path.joinpath("dataset_val.pt"))

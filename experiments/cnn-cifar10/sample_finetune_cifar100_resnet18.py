@@ -47,7 +47,7 @@ from SANE.evaluation.ray_fine_tuning_callback_bootstrapped import (
 
 
 # %%
-### cifar100 -> cifar100
+### cifar10 -> cifar10
 # load reference model
 from SANE.models.def_AE_module import AEModule
 
@@ -67,31 +67,36 @@ module.model.load_state_dict(checkpoint["model"])
 #
 
 # subsampled tok halo bn_cond
-clbk_10 = CheckpointSamplingCallbackSubsampled(
-    sample_config_path=Path("../data/dataset_cifar100_token_288_ep60_std/params.json"),
+clbk_10 = CheckpointSamplingCallbackBootstrapped(
+    sample_config_path=Path("../../data/dataset_cnn_cifar10_sample_ep21/params.json"),
     finetuning_epochs=10,
     repetitions=10,
     tokensize=config["ae:i_dim"],
-    anchor_ds_path=Path("../data/dataset_cifar100_token_288_ep60_std/dataset_train.pt"),
-    reference_dataset_path=Path("../data/cifar100_preprocessed.pt"),
-    bootstrap_number=50,
+    anchor_ds_path=None,  # sample from distribution
+    reference_dataset_path=Path("../../data/cifar10_preprocessed.pt"),
+    bootstrap_iterations=20,
+    bootstrap_samples=1000,
+    bootstrap_keep_top_n=100,
     mode="token",
     norm_mode="standardize",
     layer_norms_path=Path(
-        "../data/dataset_cifar100_token_288_ep60_std/dataset_normalization_train.json"
+        "../../data/dataset_cnn_cifar10_sample_ep21/dataset_normalization_train.json"
     ),
-    logging_prefix="eval_cifar100_subsampled_token",
+    logging_prefix="eval_cifar10_subsampled_token",
     every_n_epochs=0,
     eval_iterations=[0],
-    batch_size=32,
+    batch_size=0,
     reset_classifier=False,
     halo=True,
-    halo_wse=128,
-    halo_hs=64,
+    halo_wse=24,
+    halo_hs=8,
     bn_condition_iters=200,
+    anchor_sample_number=1000,
+    mu_glob=0.0,
+    sigma_glob=2.0,
 )
 res_10 = clbk_10.on_validation_epoch_end(ae_model=module, iteration=0)
 
-fname = "perf_finetune_cifar100.json"
+fname = "perf_finetune_cifar10.json"
 with open(fname, "w") as f:
     json.dump(res_10, f)

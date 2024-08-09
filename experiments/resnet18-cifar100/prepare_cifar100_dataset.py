@@ -25,7 +25,7 @@ from torchvision import datasets, transforms
 
 from ptmz.models.def_NN_experiment import NN_tune_trainable
 
-data_path = Path("../data")
+data_path = Path("../../data")
 
 
 def main():

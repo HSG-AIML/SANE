@@ -33,11 +33,6 @@ from pathlib import Path
 from SANE.models.def_AE_trainable import AE_trainable
 from SANE.datasets.dataset_sampling_preprocessed import PreprocessedSamplingDataset
 
-from SANE.git_re_basin.git_re_basin import (
-    PermutationSpec,
-    resnet18_permutation_spec,
-)
-
 
 PATH_ROOT = Path("./")
 
@@ -116,7 +111,7 @@ def main():
     ###### Datasets ###########################################################################
     # pre-compute dataset and drop in torch.save
     # data_path = output_dir.joinpath(experiment_name)
-    data_path = Path("../data/dataset_cifar100_token_288_ep60_std/")
+    data_path = Path("../../data/dataset_cifar100_token_288_ep60_std/")
     data_path.mkdir(exist_ok=True)
     # path to ffcv dataset for training
     config["dataset::dump"] = data_path.joinpath("dataset.pt").absolute()
