@@ -1,6 +1,8 @@
 import os
 import torch
+from pathlib import Path
 from torch.utils.data import Dataset
+
 
 class PreprocessedSamplingDataset(Dataset):
     def __init__(self, zoo_paths, split="train", transforms=None):
@@ -13,7 +15,9 @@ class PreprocessedSamplingDataset(Dataset):
     def load_datasets(self, zoo_paths):
         datasets = []
         for path in zoo_paths:
-            directory_path = os.path.join(path, f"dataset_torch.{self.split}")
+            directory_path = (
+                Path(path).joinpath(f"dataset_torch.{self.split}").absolute()
+            )
             if os.path.isdir(directory_path):
                 datasets.append(directory_path)
             else:
@@ -35,12 +39,12 @@ class PreprocessedSamplingDataset(Dataset):
     def __getitem__(self, idx):
         file_path = self.samples[idx]
         item = torch.load(file_path)
-        
-        ddx = item['w']
-        mask = item['m']
-        pos = item['p']
-        props = item['props']
-        
+
+        ddx = item["w"]
+        mask = item["m"]
+        pos = item["p"]
+        props = item["props"]
+
         if self.transforms:
             ddx, mask, pos = self.transforms(ddx, mask, pos)
         return ddx, mask, pos, props
