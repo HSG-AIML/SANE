@@ -291,6 +291,7 @@ class AE_trainable(Trainable):
             # import conventional downstream module
             windowsize = self.config.get("training::windowsize", 15)
             # MULTIWINDOW
+            trafo_dataset = None
             if self.config.get("trainset::multi_windows", None):
                 trafo_dataset = MultiWindowCutter(
                     windowsize=windowsize, k=self.config.get("trainset::multi_windows")
@@ -305,10 +306,13 @@ class AE_trainable(Trainable):
             valset = dataset.get("valset", None)
 
             # transfer trafo_dataset to datasets
-            trainset.transforms = trafo_dataset  # this applies multi-windowcutter, etc.
-            testset.transforms = trafo_dataset
-            if valset is not None:
-                valset.transforms = trafo_dataset
+            if trafo_dataset is not None:
+                trainset.transforms = (
+                    trafo_dataset  # this applies multi-windowcutter, etc.
+                )
+                testset.transforms = trafo_dataset
+                if valset is not None:
+                    valset.transforms = trafo_dataset
 
             # get full dataset in tensors
             logging.info("set up dataloaders")
@@ -413,7 +417,6 @@ class AE_trainable(Trainable):
                     dataset_info_path = str(self.config["dataset::dump"]).replace(
                         "dataset.pt", "dataset_info_test.json"
                     )
-
 
         else:
             logging.info("No properties found in dataset - skip downstream tasks.")
