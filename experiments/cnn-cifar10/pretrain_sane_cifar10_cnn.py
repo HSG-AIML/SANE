@@ -52,7 +52,7 @@ def main():
     print(f"resources_per_trial: {resources_per_trial}")
 
     ### configure experiment #########
-    experiment_name = "sane_cifar10_resnet18"
+    experiment_name = "sane_cifar10_cnn"
     # set module parameters
     config = {}
     config["seed"] = 32
@@ -74,12 +74,12 @@ def main():
 
     config["training::reduction"] = "mean"
 
-    config["ae:i_dim"] = 288
+    config["ae:i_dim"] = 289
     config["ae:lat_dim"] = 128
-    config["ae:max_positions"] = [55000, 100, 550]
-    config["training::windowsize"] = 256
-    config["ae:d_model"] = 2048
-    config["ae:nhead"] = 16
+    config["ae:max_positions"] = [100, 10, 40]
+    config["training::windowsize"] = 64
+    config["ae:d_model"] = 1024
+    config["ae:nhead"] = 8
     config["ae:num_layers"] = 8
 
     # configure optimizer
