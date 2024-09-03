@@ -174,3 +174,4 @@ latest-run
 /experiments
 # checkpoints
 *.pt
+*.json
