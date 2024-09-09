@@ -2,7 +2,7 @@
 
 # SANE: Scalable and Versatile Weight Space Learning
 
-This repository contains the code for the paper "Towards Scalable and Versatile Weight Space Learning," presented at ICML 2024. This work introduces SANE*, a novel approach for learning task-agnostic representations of neural networks that are scalable to larger models and applicable to various tasks. The paper can be found [here](http://arxiv.org/abs/2406.09997).
+This repository contains the code for the paper "Towards Scalable and Versatile Weight Space Learning," presented at ICML 2024. This work introduces SANE*, a novel approach for learning task-agnostic representations of neural networks that are scalable to larger models and applicable to various tasks. The paper can be found here: [ICML proceedings](https://proceedings.mlr.press/v235/schurholt24a.html) | [arxiv](http://arxiv.org/abs/2406.09997).
 
 <sup>*Sequential Autoencoder for Neural Embeddings</sub>
 
